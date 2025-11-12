@@ -15,6 +15,3 @@ uploads/
 .dockerignore
 Dockerfile
 docker-compose.yaml
-
-
-.env

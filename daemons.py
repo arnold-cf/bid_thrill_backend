@@ -4,15 +4,30 @@ from services.tasks import publish_task
 from services.worker import start_worker
 
 # Define constants for task names
-TASK_FETCH_GAMEONE_STAKING = "fetch_game_one_staking"
-TASK_FETCH_GAMETWO_STAKING = "fetch_game_two_staking"
-TASK_PROCESS_B2C_DISBURSEMENT = "process_b2c_disbursement"
+TASK_FETCH_ITEMONE_BIDS = "fetch_item_one_bids"
+TASK_FETCH_ITEMTWO_BIDS = "fetch_item_two_bids"
+TASK_FETCH_ITEMTHREE_BIDS = "fetch_item_three_bids"
+TASK_FETCH_ITEMFOUR_BIDS = "fetch_item_four_bids"
+TASK_FETCH_ITEMFIVE_BIDS = "fetch_item_five_bids"
+TASK_POST_CLOSE_CREATE_ITEMONE_AUCTION = "post_close_create_item_one_auction"
+TASK_POST_CLOSE_CREATE_ITEMTWO_AUCTION = "post_close_create_item_two_auction"
+TASK_POST_CLOSE_CREATE_ITEMTHREE_AUCTION = "post_close_create_item_three_auction"
+TASK_POST_CLOSE_CREATE_ITEMFOUR_AUCTION = "post_close_create_item_four_auction"
+TASK_POST_CLOSE_CREATE_ITEMFIVE_AUCTION = "post_close_create_item_five_auction"
 
 # Sleep durations for each task (in seconds)
 TASK_SLEEP_DURATIONS = {
-    TASK_FETCH_GAMEONE_STAKING: 2,
-    TASK_FETCH_GAMETWO_STAKING: 2,
-    TASK_PROCESS_B2C_DISBURSEMENT: 2,
+    TASK_FETCH_ITEMONE_BIDS: 2,
+    TASK_FETCH_ITEMTWO_BIDS: 2,
+    TASK_FETCH_ITEMTHREE_BIDS: 2,
+    TASK_FETCH_ITEMFOUR_BIDS: 2,
+    TASK_FETCH_ITEMFIVE_BIDS: 2,
+    
+    TASK_POST_CLOSE_CREATE_ITEMONE_AUCTION: 2,
+    TASK_POST_CLOSE_CREATE_ITEMTWO_AUCTION: 2,
+    TASK_POST_CLOSE_CREATE_ITEMTHREE_AUCTION: 2,
+    TASK_POST_CLOSE_CREATE_ITEMFOUR_AUCTION: 2,
+    TASK_POST_CLOSE_CREATE_ITEMFIVE_AUCTION: 2,
 }
 
 def main():

@@ -1,10 +1,10 @@
 from flask import request, jsonify, json, Response
 from api.password.crypt_password import hash_password, unhash_password
 from api.payload.payload import Localtime
+from datetime import datetime, timedelta
 from main import mysql, app
 from api.logs.logger import ErrorLogger, UssdLogger
 import os, random, string
-from modules.game_module.game_controller import GameEngines
 from api.alphanumeric.generate import UniqueNumber
 
 class Ussd:
@@ -37,16 +37,7 @@ class Ussd:
                        "service_code":service_code,
                        "session_id":session_id
                        }
-            
-            # if ((msisdn == "254112769729") or (msisdn == "254791477417")):
-            #     cancel_response = "Process not allowed!"
-            #     response = {"description":cancel_response, 
-            #                 "status":1000}
-            #     return response
-            # else:
-            #     pass
-                
-                
+                            
             #Call the initial ussd API data processor
             
             process_response = Ussd().initial_process(details)
@@ -108,13 +99,14 @@ class Ussd:
         
         #Initialize Menus
         
-        main_menu_text = "CON WIN Ksh 2 MILLI\n\n"
-        main_menu_text += f"1. Aviator (Ksh 20)\n"
-        main_menu_text += f"2. Kikapu Milli (Ksh 40)\n"
-        main_menu_text += f"0. Redeem Points\n"
+        main_menu_text = "CON Select Active Bid\n\n"
+        main_menu_text += f"1. TV LG 32\" (Ksh 30)\n"
+        main_menu_text += f"2. Vivo Y19s (Ksh 40)\n"
+        main_menu_text += f"3. Fridge Ramtons (Ksh 20)\n"
+        main_menu_text += f"4. E-Nduthi (Ksh 60)\n"
+        main_menu_text += f"5. 5k Shopping (Ksh 35)\n"
+        main_menu_text += f"0. My Bids\n"
         
-        game_two_payment_info = "Utapata request ya kuweka MPESA PIN yako kukamilisha BET ya Ksh 40"
-
         # log request data to a json file
         request_data["datecreated"] = Localtime().gettime()
         request_data = str(request_data)
@@ -187,7 +179,7 @@ class Ussd:
             ErrorLogger().logError(message)
             return message
         
-        # Punter dialed ussd 
+        # Participant dialed ussd 
         
         if (text == ""):
             cur.execute("""UPDATE ussd_session SET input_string = %s WHERE session_id = %s""", ("XXXX", session_id))
@@ -197,7 +189,7 @@ class Ussd:
                         "status":1000}
             return response
         
-        # Punter entered 00 to go back to Main Menu 
+        # Participant entered 00 to go back to Main Menu 
         elif user_input == '00':
             cur.execute("""UPDATE ussd_session SET input_string = %s WHERE session_id = %s""", ("XXXX", session_id))
             mysql.get_db().commit()
@@ -206,205 +198,241 @@ class Ussd:
                         "status":1000}
             return response
         
-        #Punter has selected Game 1 option on Main Menu. System displays Game 1 Menu
+        #Participant has selected Item 1 option on Main Menu. System displays Item 1 Auction
         elif txt_length == 1 and user_input == "1":
-            # Update input_string
-            cur.execute("""UPDATE ussd_session SET input_string = %s WHERE session_id = %s""", ("XXXX*1", session_id))
-
-            # Game mechanics starts here
-            multiplier_ranges = [(2, 5), (6, 9), (11, 100), (300, 999), (2000, 6999), (7000, 9999)]
-
-            # Generate multipliers and shuffle them
-            multipliers = [round(random.uniform(start, end), 1) for start, end in multiplier_ranges]
-            random.shuffle(multipliers)
-
-            # Prepare multiplier-to-label mapping once
-            sorted_multipliers = sorted(multipliers)
-            labels_by_rank = ["Boost", "Zoom", "Thrust", "Lift", "Jet", "Flyer"]
-            multiplier_label_map = dict(zip(sorted_multipliers, labels_by_rank))
-
-            # Build the game menu efficiently
-            game_one_menu = ["CON Aviator - Chagua Ndege Yako :\n\n"]
-            for i, multiplier in enumerate(multipliers):
-                label = multiplier_label_map[multiplier]
-                game_one_menu.append(f"{i+1}. x{multiplier} {label}\n")
-
-            game_one_menu.append("\n00. Main Menu")
+            cur.execute("""UPDATE ussd_session SET input_string = %s WHERE session_id = %s""", (f"{user_inputs}*{user_input}", session_id))
             
-            # Join the menu list into a single string
-            game_one_menu = ''.join(game_one_menu)
-
-            # Batch the database update (game_number and multipliers)
-            cur.execute("""
-                UPDATE ussd_session 
-                SET game_number = 1, multipliers = %s 
-                WHERE session_id = %s
-            """, (json.dumps(multipliers), session_id))
+            item_option = 1
+            # retail_price = 15000
+            amount = float(30)
             
-            # Commit the database updates in one go
-            mysql.get_db().commit()
-
-            # Prepare the response
-            response = {
-                "description": game_one_menu,
-                "status": 1001
-            }
-            return response
-        
-        #Punter has selected Game 2 option on Main Menu. System displays Game 2 Menu
-        elif txt_length == 1 and user_input == "2":
-            # Update input string once at the beginning, reduce redundant commits
-            cur.execute("""UPDATE ussd_session SET input_string = %s WHERE session_id = %s""", ("XXXX*2", session_id))
+            date_created = Localtime().gettime()
+            status = 0
             
-            # Commit only once after all updates for better performance
-            # Game two mechanics starts here
-            multiplier_ranges = [(50, 69), (70, 119), (120, 249), (260, 4999), (5000, 9999), (10000, 100000)]
-
-            # Generate multipliers in one line using list comprehension and random.uniform
-            multipliers = [round(random.uniform(start, end), 1) for start, end in multiplier_ranges]
-
-            # Shuffle the multipliers once
-            random.shuffle(multipliers)
+            cur.execute("""SELECT id, end_date FROM item_one_auctions WHERE status = 1 AND item_id = 1""")
+            get_auction_details = cur.fetchone()
+            auction_id = get_auction_details['id']
+            end_date = get_auction_details['end_date']
+            biddingtime = self.get_remaining_time(end_date)
             
-            # Prepare multipliers for database update
-            cur.execute("UPDATE ussd_session SET game_number = 2, multipliers = %s WHERE session_id = %s", 
-                        (json.dumps(multipliers), session_id))
-
+            
+            #Generate ticket 
+            first_char = 'm'
+            random_chars = random.choices(string.ascii_lowercase, k=6)  
+            random_number = random.choice(string.digits)  
+            random_index = random.randint(0, 6) 
+            random_chars.insert(random_index, random_number) 
+            ticket_number = first_char + ''.join(random_chars)
+                
+            cur.execute("""INSERT INTO item_one_bids (session_id, item_option, auction_id, ticket_number, amount, mobile_number, date_created, status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""", 
+                                                     (session_id, item_option, auction_id, ticket_number, amount,        msisdn, date_created, status))
             mysql.get_db().commit()
             
-            # Avoid sorting every time and directly use a sorted copy
-            sorted_multipliers = sorted(multipliers)
+            item_one_payment_info = f"END LG TV 32\" LED (15k)\nResults in {biddingtime}\nEnter MPESA PIN kulipa Ksh {int(amount)}"
             
-            # Pre-define labels by rank, no change needed here
-            labels_by_rank = ["Kikoba", "Uteo", "Kyondo", "Mfuko", "Sanduku", "Gunia"]
-
-            # Create a dictionary mapping multiplier values to labels in one go
-            multiplier_label_map = dict(zip(sorted_multipliers, labels_by_rank))
-
-            # Prepare the game menu efficiently by building the string in one go
-            game_two_menu = "CON Jaza na 40 - Chagua :\n\n" + "\n".join(
-                [f"{i+1}. Ksh {multiplier} {multiplier_label_map[multiplier]}" for i, multiplier in enumerate(multipliers)]
-            )
-            
-            # Append the main menu at the end of the string
-            game_two_menu += "\n00. Main Menu"
-            
-            # Return the response with the generated game menu
-            response = {"description": game_two_menu, "status": 1001}
-            return response
-        
-        #Punter has selected 3 option on Main Menu. System displays Redeem Points 3 Menu
-        elif txt_length == 1 and user_input == "0":
-            cur.execute("""UPDATE ussd_session SET input_string = %s WHERE session_id = %s""", ("XXXX*0", session_id))
-            mysql.get_db().commit()
-            
-            #select available points, insert into disbursement table.
-            cur.execute("""SELECT balance FROM accumulated_points WHERE msisdn = %s""", (msisdn))
-            points = cur.fetchone()
-            if points is not None:
-                points_balance = float(points['balance'])
-            else:
-                points_balance = 0
-            
-            # points_balance = 0 
-            
-            redeem_points = f"CON Your Balance is Ksh {points_balance}\n\n"
-            
-            redeem_points += "1. Withdraw. Min is Ksh 10\n"
-            
-            redeem_points += "\n00. Main Menu"
-            
-            response = {"description":redeem_points,
+            response = {"description":item_one_payment_info,
                         "status":1001}
             return response
         
-        #Punter has selected any of the Boxes 1, 2, 3, 4, 5, 6, 7 options on Game 1 Menu.
-        elif txt_length == 2 and int(inputs[1]) == 1 and int(user_input) in [1, 2, 3, 4, 5, 6, 7]:
+        #Participant has selected Item 2 option on Main Menu. System displays Item 2 Auction
+        elif txt_length == 1 and user_input == "2":
             cur.execute("""UPDATE ussd_session SET input_string = %s WHERE session_id = %s""", (f"{user_inputs}*{user_input}", session_id))
             
-            game_option = inputs[1]
-            box_selected = user_input
+            item_option = 2
+            # retail_price = 20000
+            amount = float(40)
             
             date_created = Localtime().gettime()
             status = 0
-            cur.execute("""INSERT INTO game_one_staking (session_id, game_option, box_selected, mobile_number, date_created, status) VALUES (%s, %s, %s, %s, %s, %s)""", 
-                                                        (session_id, game_option, box_selected,        msisdn, date_created, status))
+            
+            cur.execute("""SELECT id, end_date FROM item_two_auctions WHERE status = 1 AND item_id = 2""")
+            get_auction_details = cur.fetchone()
+            auction_id = get_auction_details['id']
+            end_date = get_auction_details['end_date']
+            biddingtime = self.get_remaining_time(end_date)
+            
+            
+            #Generate ticket 
+            first_char = 'n'
+            random_chars = random.choices(string.ascii_lowercase, k=6)  
+            random_number = random.choice(string.digits)  
+            random_index = random.randint(0, 6) 
+            random_chars.insert(random_index, random_number) 
+            ticket_number = first_char + ''.join(random_chars)
+                
+            cur.execute("""INSERT INTO item_two_bids (session_id, item_option, auction_id, ticket_number, amount, mobile_number, date_created, status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""", 
+                                                     (session_id, item_option, auction_id, ticket_number, amount,        msisdn, date_created, status))
             mysql.get_db().commit()
             
-            game_one_payment_info = "END Utapata request ya kuweka MPESA PIN yako kukamilisha BET ya Ksh 20"
+            item_two_payment_info = f"END Vivo Y19s (20k)\nResults in {biddingtime}\nEnter MPESA PIN kulipa Ksh {int(amount)}"
             
-            response = {"description":game_one_payment_info,
-                        "status":1002}
+            response = {"description":item_two_payment_info,
+                        "status":1001}
             return response
         
-        #Punter has selected any of the Boxes 1, 2, 3, 4, 5, 6, 7 options on Game 2 Menu.
-        elif txt_length == 2 and int(inputs[1]) == 2 and int(user_input) in [1, 2, 3, 4, 5, 6, 7]:
+        #Participant has selected Item 3 option on Main Menu. System displays Item 3 Auction
+        elif txt_length == 1 and user_input == "3":
             cur.execute("""UPDATE ussd_session SET input_string = %s WHERE session_id = %s""", (f"{user_inputs}*{user_input}", session_id))
-            #Send details to the game engine to initiate staking
-            game_option = inputs[1]
-            box_selected = user_input
+            
+            item_option = 3
+            # retail_price = 15000
+            amount = float(20)
             
             date_created = Localtime().gettime()
             status = 0
-            cur.execute("""INSERT INTO game_two_staking (session_id, game_option, box_selected, mobile_number, date_created, status) VALUES (%s, %s, %s, %s, %s, %s)""", 
-                                                        (session_id, game_option, box_selected,        msisdn, date_created, status))
+            
+            cur.execute("""SELECT id, end_date FROM item_three_auctions WHERE status = 1 AND item_id = 3""")
+            get_auction_details = cur.fetchone()
+            auction_id = get_auction_details['id']
+            end_date = get_auction_details['end_date']
+            biddingtime = self.get_remaining_time(end_date)
+            
+            
+            #Generate ticket 
+            first_char = 'p'
+            random_chars = random.choices(string.ascii_lowercase, k=6)  
+            random_number = random.choice(string.digits)  
+            random_index = random.randint(0, 6) 
+            random_chars.insert(random_index, random_number) 
+            ticket_number = first_char + ''.join(random_chars)
+                
+            cur.execute("""INSERT INTO item_three_bids (session_id, item_option, auction_id, ticket_number, amount, mobile_number, date_created, status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""", 
+                                                     (session_id, item_option, auction_id, ticket_number, amount,        msisdn, date_created, status))
             mysql.get_db().commit()
             
-            game_two_payment_info = "END Utapata request ya kuweka MPESA PIN yako kukamilisha BET ya Ksh 40"
-        
-            response = {"description":game_two_payment_info,
-                        "status":1002}
+            item_three_payment_info = f"END Fridge Ramtons 88L (15k)\nResults in {biddingtime}\nEnter MPESA PIN kulipa Ksh {int(amount)}"
+            
+            response = {"description":item_three_payment_info,
+                        "status":1001}
             return response
         
-        
-        #Punter has selected withdraw points
-        elif txt_length == 2 and int(inputs[1]) == 0 and int(user_input) ==1:
+        #Participant has selected Item 4 option on Main Menu. System displays Item 4 Auction
+        elif txt_length == 1 and user_input == "4":
             cur.execute("""UPDATE ussd_session SET input_string = %s WHERE session_id = %s""", (f"{user_inputs}*{user_input}", session_id))
+            
+            item_option = 4
+            # retail_price = 180000
+            amount = float(60)
+            
+            date_created = Localtime().gettime()
+            status = 0
+            
+            cur.execute("""SELECT id, end_date FROM item_four_auctions WHERE status = 1 AND item_id = 4""")
+            get_auction_details = cur.fetchone()
+            auction_id = get_auction_details['id']
+            end_date = get_auction_details['end_date']
+            biddingtime = self.get_remaining_time(end_date)
+            
+            
+            #Generate ticket 
+            first_char = 'q'
+            random_chars = random.choices(string.ascii_lowercase, k=6)  
+            random_number = random.choice(string.digits)  
+            random_index = random.randint(0, 6) 
+            random_chars.insert(random_index, random_number) 
+            ticket_number = first_char + ''.join(random_chars)
+                
+            cur.execute("""INSERT INTO item_four_bids (session_id, item_option, auction_id, ticket_number, amount, mobile_number, date_created, status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""", 
+                                                      (session_id, item_option, auction_id, ticket_number, amount,        msisdn, date_created, status))
             mysql.get_db().commit()
-            #select available points, insert into disbursement table.
-            cur.execute("""SELECT balance FROM accumulated_points WHERE msisdn = %s""", (msisdn))
-            points = cur.fetchone()
-            if points is not None:
-                points_balance = float(points['balance'])
-            else:
-                points_balance = 0
             
-            if points_balance >= 10:
-                id = UniqueNumber().MpesaDisbursementRequestId()
-                status = 0
-                game_no = 0
-                processed = 0
-                
-                first_char = 'z'
-                random_chars = random.choices(string.ascii_lowercase, k=6)  # Start with 6 letters
-                random_number = random.choice(string.digits)  # Choose one random number
-                random_index = random.randint(0, 6)  # Random index for the number
-                random_chars.insert(random_index, random_number)  # Insert number into the characters list
-                ticket_number = first_char + ''.join(random_chars)
-                date_created = Localtime().gettime()
+            item_four_payment_info = f"END E-Nduthi (200k)\nResults in {biddingtime}\nEnter MPESA PIN kulipa Ksh {int(amount)}"
             
-                #deduct points before withdrawing
-                cur.execute("""UPDATE accumulated_points SET balance = balance - %s WHERE msisdn = %s""",(points_balance, msisdn))
-                
-                cur.execute("""INSERT INTO mpesa_b2c_disbursement_requests(id, msisdn,         amount, game_no, ticket_number, status, processed, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""", 
-                                                                          (id, msisdn, points_balance, game_no, ticket_number, status, processed, date_created))
-                
-                
-                mysql.get_db().commit()
-                
-                redeem_points_info = "END You have redeemed your points successfully!"
+            response = {"description":item_four_payment_info,
+                        "status":1001}
+            return response
+        
+        #Participant has selected Item 5 option on Main Menu. System displays Item 5 Auction
+        elif txt_length == 1 and user_input == "5":
+            cur.execute("""UPDATE ussd_session SET input_string = %s WHERE session_id = %s""", (f"{user_inputs}*{user_input}", session_id))
             
-            else:
-                redeem_points_info = "END Minimum amount to withdraw is Ksh 10"
+            item_option = 5
+            # retail_price = 5000
+            amount = float(35)
+            
+            date_created = Localtime().gettime()
+            status = 0
+            
+            cur.execute("""SELECT id, end_date FROM item_five_auctions WHERE status = 1 AND item_id = 5""")
+            get_auction_details = cur.fetchone()
+            auction_id = get_auction_details['id']
+            end_date = get_auction_details['end_date']
+            biddingtime = self.get_remaining_time(end_date)
+            
+            
+            #Generate ticket 
+            first_char = 'r'
+            random_chars = random.choices(string.ascii_lowercase, k=6)  
+            random_number = random.choice(string.digits)  
+            random_index = random.randint(0, 6) 
+            random_chars.insert(random_index, random_number) 
+            ticket_number = first_char + ''.join(random_chars)
                 
-            response = {"description":redeem_points_info,
-                        "status":1002}
+            cur.execute("""INSERT INTO item_five_bids (session_id, item_option, auction_id, ticket_number, amount, mobile_number, date_created, status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""", 
+                                                      (session_id, item_option, auction_id, ticket_number, amount,        msisdn, date_created, status))
+            mysql.get_db().commit()
+            
+            item_five_payment_info = f"END 5k Shopping\nResults in {biddingtime}\nEnter MPESA PIN kulipa Ksh {int(amount)}"
+            
+            response = {"description":item_five_payment_info,
+                        "status":1001}
+            return response
+    
+        #Participant has selected 0 option on Main Menu. System displays List of Bids Menu
+        elif txt_length == 1 and user_input == "0":
+            cur.execute("""UPDATE ussd_session SET input_string = %s WHERE session_id = %s""",("XXXX*0", session_id))
+            mysql.get_db().commit()
+
+            # Helper to fetch active auction id for a table
+            def get_active_auction_id(table, item_id):
+                cur.execute(f"""SELECT id FROM {table} WHERE status = 1 AND item_id = %s LIMIT 1""", (item_id,))
+                r = cur.fetchone()
+                return (r["id"] if r else None)
+
+            # Helper to count user's bids for auction in last 13 hours
+            def count_user_bids(auction_id, msisdn):
+                if not auction_id:
+                    return 0
+                cur.execute("""SELECT COUNT(*) AS total_bids FROM mpesa_paybill_stk_responses WHERE auction_id = %s AND msisdn = %s AND created_at >= (NOW() - INTERVAL 13 HOUR)""",(auction_id, msisdn))
+                row = cur.fetchone()
+                return int(row["total_bids"]) if row and "total_bids" in row else 0
+
+            # Map: (table_name, item_id, label)
+            items = [
+                ("item_one_auctions",   1, "SMART TV"),
+                ("item_two_auctions",   2, "Phone"),
+                ("item_three_auctions", 3, "Fridge"),
+                ("item_four_auctions",  4, "E-Nduthi"),
+                ("item_five_auctions",  5, "Shopping"),
+            ]
+
+            lines = []
+            for idx, (table, item_id, label) in enumerate(items, start=1):
+                auction_id = get_active_auction_id(table, item_id)
+                bids_count = count_user_bids(auction_id, msisdn)
+                # Show auction id only if you want it visible:
+                # lines.append(f"{idx}. {label} (#{auction_id if auction_id else '-'}) – {bids_count} bids")
+                lines.append(f"{idx}. {label} – {bids_count} bids")
+
+            my_bids = "CON My Bids\n\n" + "\n".join(lines) + "\n\n00. Back"
+
+            response = {"description": my_bids, "status": 1001}
             return response
 
-        else:
-            cur.execute("""UPDATE ussd_session SET input_string = %s WHERE session_id = %s""", ("XXXX", session_id))
-            mysql.get_db().commit()
-            
-            response = {"description":main_menu_text,
-                        "status":1000}
-            return response
+
+    def get_remaining_time(self, end_datetime):
+        local = Localtime()
+        now_str = local.gettime()  # "YYYY-MM-DD HH:MM:SS"
+        now = datetime.strptime(now_str, "%Y-%m-%d %H:%M:%S")
+
+        if isinstance(end_datetime, str):
+            end_datetime = datetime.strptime(end_datetime, "%Y-%m-%d %H:%M:%S")
+
+        remaining_mins = int((end_datetime - now).total_seconds() // 60)
+
+        if remaining_mins <= 0:
+            return "Auction closed"
+        if remaining_mins < 60:
+            return f"{remaining_mins} mins"
+        hrs, mins = divmod(remaining_mins, 60)
+        return f"{hrs} hrs {mins} mins" if mins else f"{hrs} hrs"

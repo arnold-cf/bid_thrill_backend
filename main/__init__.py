@@ -70,15 +70,15 @@ mysql.init_app(app)
 # Importing the blueprints
 from modules.administrator_authentication.administrator_url import administrator_auth_bp
 from modules.ussd_module.ussd_url import ussd_bp
-from modules.telegram_module.telegram_url import tel_bp
-from modules.game_module.game_url import game_bp
+# from modules.telegram_module.telegram_url import tel_bp
+from modules.auction_module.auction_url import auction_bp
 from modules.payments_module.payments_url import payments_bp
 from modules.sms_module.sms_urls import sms_bp
 
 app.register_blueprint(administrator_auth_bp, url_prefix="/app/ver_02/auth")  
 app.register_blueprint(ussd_bp, url_prefix="/api/v2/ussd")
-app.register_blueprint(tel_bp, url_prefix="/app/ver_02/tel")
-app.register_blueprint(game_bp, url_prefix="/app/ver_02/engine")
+# app.register_blueprint(tel_bp, url_prefix="/app/ver_02/tel")
+app.register_blueprint(auction_bp, url_prefix="/app/ver_02/engine")
 app.register_blueprint(payments_bp, url_prefix="/app/ver_02/cents")
 app.register_blueprint(sms_bp, url_prefix="/app/ver_02/sms")
 

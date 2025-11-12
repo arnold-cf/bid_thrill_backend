@@ -1,8 +1,15 @@
 import asyncio
 from services.tasks import (
-    fetch_game_one_staking,
-    fetch_game_two_staking,
-    process_b2c_disbursement,
+    fetch_item_one_bids,
+    fetch_item_two_bids,
+    fetch_item_three_bids,
+    fetch_item_four_bids,
+    fetch_item_five_bids,
+    post_close_create_item_one_auction,
+    post_close_create_item_two_auction,
+    post_close_create_item_three_auction,
+    post_close_create_item_four_auction,
+    post_close_create_item_five_auction,
     
 )
 from services.rabbitmq import connect_to_rabbitmq
@@ -10,9 +17,16 @@ from main import app  # Import the Flask app
 
 # Task handler mapping
 TASK_HANDLERS = {
-    "fetch_game_one_staking": fetch_game_one_staking,
-    "fetch_game_two_staking": fetch_game_two_staking,
-    "process_b2c_disbursement": process_b2c_disbursement,
+    "fetch_item_one_bids": fetch_item_one_bids,
+    "fetch_item_two_bids": fetch_item_two_bids,
+    "fetch_item_three_bids": fetch_item_three_bids,
+    "fetch_item_four_bids": fetch_item_four_bids,
+    "fetch_item_five_bids": fetch_item_five_bids,
+    "post_close_create_item_one_auction": post_close_create_item_one_auction,
+    "post_close_create_item_two_auction": post_close_create_item_two_auction,
+    "post_close_create_item_three_auction": post_close_create_item_three_auction,
+    "post_close_create_item_four_auction": post_close_create_item_four_auction,
+    "post_close_create_item_five_auction": post_close_create_item_five_auction,
     
 }
 
@@ -46,9 +60,16 @@ def start_worker():
 
     # Define the task queues
     task_queues = [
-        "fetch_game_one_staking",
-        "fetch_game_two_staking",
-        "process_b2c_disbursement",
+        "fetch_item_one_bids",
+        "fetch_item_two_bids",
+        "fetch_item_three_bids",
+        "fetch_item_four_bids",
+        "fetch_item_five_bids",
+        "post_close_create_item_one_auction",
+        "post_close_create_item_two_auction",
+        "post_close_create_item_three_auction",
+        "post_close_create_item_four_auction",
+        "post_close_create_item_five_auction",
         
     ]
 

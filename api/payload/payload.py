@@ -11,6 +11,8 @@ class Localtime:
 
         try:
             os.environ["TZ"] = "Africa/Nairobi"  # set new timezone
+            if hasattr(time, "tzset"):     # ✅ Ubuntu will have this
+                time.tzset()
 
             d2 = time.strftime("%Y-%m-%d %H:%M:%S")
 

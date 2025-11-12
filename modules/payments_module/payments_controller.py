@@ -9,7 +9,7 @@ from api.logs.logger import MpesaLogger, ErrorLogger
 from api.payload.payload import Localtime
 from api.alphanumeric.generate import UniqueNumber
 from modules.sms_module.sms_model import SMS
-from modules.game_module.game_model import GameModel
+from modules.auction_module.auction_model import AuctionModel
 from main import mysql, app
 
 class Payments:
@@ -84,15 +84,13 @@ class Payments:
                            "status":402}
                 MpesaLogger().log(message)
                 return message
-            
+        
+        auction_id = details["auction_id"]
         ticket_number = details["ticket_number"]
-        box_selected = details["box_selected"]
-        multiplier_label = details["multiplier_label"]
-        stkamount = float(details["bet_amount"])
+        stkamount = float(details["amount"])
         mobile_number = details["mobile_number"]
         
-        account_number = str(multiplier_label) #+ ' ' + str(ticket_number)
-        accountnumber =  str(ticket_number) + ' - ' + str(multiplier_label)
+        accountnumber =  str(ticket_number)
         
         mobilenumber = ''.join(mobile_number.split()) 
         msisdn ='254' + mobilenumber[-9:] 
@@ -157,8 +155,8 @@ class Payments:
                 amount = float(amount)
                 status = 1 #stk push was initiated successfully
                 
-                cur.execute('''INSERT INTO mpesa_paybill_stk_requests (msisdn, amount, account_number, ticket_number, MerchantRequestID, CheckoutRequestID, ResponseCode, ResponseDescription, CustomerMessage, requestId, errorCode, errorMessage, status, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', 
-                                                                      (msisdn, amount, account_number, ticket_number, MerchantRequestID, CheckoutRequestID, response_code, ResponseDescription, CustomerMessage, requestId, errorCode, errorMessage, status, created_at))
+                cur.execute('''INSERT INTO mpesa_paybill_stk_requests (msisdn, amount, ticket_number, auction_id, MerchantRequestID, CheckoutRequestID, ResponseCode, ResponseDescription, CustomerMessage, requestId, errorCode, errorMessage, status, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', 
+                                                                      (msisdn, amount, ticket_number, auction_id, MerchantRequestID, CheckoutRequestID, response_code, ResponseDescription, CustomerMessage, requestId, errorCode, errorMessage, status, created_at))
                 mysql.get_db().commit()
                 
                 message = {
@@ -178,8 +176,8 @@ class Payments:
                 errorCode = response['errorCode']
                 errorMessage = response['errorMessage']
                 status = 0 #stk push initiation failed 
-                cur.execute('''INSERT INTO mpesa_paybill_stk_requests (msisdn, amount, account_number, ticket_number, MerchantRequestID, CheckoutRequestID, ResponseCode, ResponseDescription, CustomerMessage, requestId, errorCode, errorMessage, status, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', 
-                                                                      (msisdn, amount, account_number, ticket_number, MerchantRequestID, CheckoutRequestID, response_code, ResponseDescription, CustomerMessage, requestId, errorCode, errorMessage, status, created_at))
+                cur.execute('''INSERT INTO mpesa_paybill_stk_requests (msisdn, amount, ticket_number, auction_id, MerchantRequestID, CheckoutRequestID, ResponseCode, ResponseDescription, CustomerMessage, requestId, errorCode, errorMessage, status, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''', 
+                                                                      (msisdn, amount, ticket_number, auction_id, MerchantRequestID, CheckoutRequestID, response_code, ResponseDescription, CustomerMessage, requestId, errorCode, errorMessage, status, created_at))
                 mysql.get_db().commit()
 
                 message = {
@@ -238,30 +236,34 @@ class Payments:
                 #trans_date = result_body['CallbackMetadata']['Item'][2]['Value']
                 #msisdn = result_body['CallbackMetadata']['Item'][3]['Value']
 
-                cur.execute("""SELECT ticket_number, account_number, amount, msisdn FROM mpesa_paybill_stk_requests WHERE MerchantRequestID = %s AND CheckoutRequestID = %s""", (MerchantRequestID, CheckoutRequestID))
+                cur.execute("""SELECT ticket_number, auction_id, amount, msisdn FROM mpesa_paybill_stk_requests WHERE MerchantRequestID = %s AND CheckoutRequestID = %s""", (MerchantRequestID, CheckoutRequestID))
                 stk_request = cur.fetchone()
                 if stk_request:
                     ticket_number = stk_request["ticket_number"]
                     amount = float(stk_request["amount"])
                     msisdn = stk_request["msisdn"]
-                    account_number = stk_request["account_number"]
+                    auction_id = stk_request["auction_id"]
 
                     #UPDATE STK request status to 2 - processed
                     cur.execute("""UPDATE mpesa_paybill_stk_requests SET status = 2 WHERE MerchantRequestID = %s AND CheckoutRequestID = %s""",(MerchantRequestID, CheckoutRequestID))
+                    mysql.get_db().commit()
+                    
+                    cur.execute("""UPDATE item_one_bids SET status = 1 WHERE ticket_number = %s""",(ticket_number))
                     mysql.get_db().commit()
                     
                     #mpesa_c2b_transactions
                     entry_id =  UniqueNumber().mpesaC2BPaybillRequestId()
                     created_at = Localtime().gettime()
 
-                    cur.execute("""INSERT IGNORE INTO mpesa_paybill_stk_responses (id, ticket_number, msisdn, amount, mpesa_ref, merchant_request_id, checkout_request_id, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
-                                                                            (entry_id, ticket_number, msisdn, amount, mpesa_ref, MerchantRequestID,   CheckoutRequestID,   created_at))
+                    cur.execute("""INSERT IGNORE INTO mpesa_paybill_stk_responses (id, ticket_number, auction_id, msisdn, amount, mpesa_ref, merchant_request_id, checkout_request_id, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                                                                            (entry_id, ticket_number, auction_id, msisdn, amount, mpesa_ref, MerchantRequestID,   CheckoutRequestID,   created_at))
                     mysql.get_db().commit()
                     
                     rowcount = cur.rowcount
                     if rowcount:
                         game_details = {
                                 "ticket_number":ticket_number,
+                                "auction_id":auction_id,
                                 "msisdn":msisdn,
                                 "bet_amount":amount,
                                 "mpesa_ref":mpesa_ref,
@@ -269,11 +271,23 @@ class Payments:
                             }
                         
                         if ticket_number.startswith('m'):
-                            GameModel().game_one_engine(game_details)
+                            AuctionModel().auction_item_one_engine(game_details)
                             
-                        elif ticket_number.startswith('w'):
+                        elif ticket_number.startswith('n'):
                             pass
-                            GameModel().game_two_engine(game_details)
+                            AuctionModel().auction_item_two_engine(game_details)
+                        
+                        elif ticket_number.startswith('p'):
+                            pass
+                            AuctionModel().auction_item_three_engine(game_details)
+                        
+                        elif ticket_number.startswith('q'):
+                            pass
+                            AuctionModel().auction_item_four_engine(game_details)
+                        
+                        elif ticket_number.startswith('r'):
+                            pass
+                            AuctionModel().auction_item_five_engine(game_details)
                         
                         else:
                             pass

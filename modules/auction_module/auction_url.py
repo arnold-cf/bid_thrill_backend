@@ -1,10 +1,9 @@
 from flask import Blueprint
 
-from modules.game_module.game_model import GameModel
-from modules.game_module.game_controller import GameEngines
+from modules.auction_module.auction_model import AuctionModel
 from flask_jwt_extended import current_user, jwt_required
 
-game_bp = Blueprint("game_blueprint", __name__)
+auction_bp = Blueprint("auction_blueprint", __name__)
 
 # @game_bp.route("/game_one_engine", methods=["POST"])
 # def game_one_engine():

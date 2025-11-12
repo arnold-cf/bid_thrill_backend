@@ -224,7 +224,6 @@ def fetch_item_five_bids():
         print(f"Error copying matches: {e}")
         mysql.get_db().rollback()
         
-
 def post_close_create_item_one_auction():
     """Close just ended auctions and create new Item One Auction"""
     
@@ -263,9 +262,6 @@ def post_close_create_item_one_auction():
         print(f"Error copying matches: {e}")
         mysql.get_db().rollback()
         
-    
-    
-
 def post_close_create_item_two_auction():
     """Close just ended auctions and create new Item Two Auction"""
     
@@ -283,7 +279,7 @@ def post_close_create_item_two_auction():
                 cur.execute("""UPDATE item_two_auctions SET status = 2 WHERE id = %s""", (auction_id,))
                 mysql.get_db().commit()
                 
-                item_id = 1
+                item_id = 2
                 status = 1
                 bids_required = 600
                 #Allowed duration: Between 2–6 hours
@@ -303,8 +299,7 @@ def post_close_create_item_two_auction():
         # Roll back the transaction in case of an error
         print(f"Error copying matches: {e}")
         mysql.get_db().rollback()
-        
-        
+         
 def post_close_create_item_three_auction():
     """Close just ended auctions and create new Item Three Auction"""
     
@@ -322,7 +317,7 @@ def post_close_create_item_three_auction():
                 cur.execute("""UPDATE item_three_auctions SET status = 2 WHERE id = %s""", (auction_id,))
                 mysql.get_db().commit()
                 
-                item_id = 1
+                item_id = 3
                 status = 1
                 bids_required = 900
                 #Allowed duration: Between 2–6 hours
@@ -343,7 +338,6 @@ def post_close_create_item_three_auction():
         print(f"Error copying matches: {e}")
         mysql.get_db().rollback()
         
-    
 def post_close_create_item_four_auction():
     """Close just ended auctions and create new Item four Auction"""
     
@@ -361,7 +355,7 @@ def post_close_create_item_four_auction():
                 cur.execute("""UPDATE item_four_auctions SET status = 2 WHERE id = %s""", (auction_id,))
                 mysql.get_db().commit()
                 
-                item_id = 1
+                item_id = 4
                 status = 1
                 bids_required = 4000
                 #Allowed duration: Between 2–6 hours
@@ -382,7 +376,6 @@ def post_close_create_item_four_auction():
         print(f"Error copying matches: {e}")
         mysql.get_db().rollback()
         
-
 def post_close_create_item_five_auction():
     """Close just ended auctions and create new Item five Auction"""
     
@@ -400,7 +393,7 @@ def post_close_create_item_five_auction():
                 cur.execute("""UPDATE item_five_auctions SET status = 2 WHERE id = %s""", (auction_id,))
                 mysql.get_db().commit()
                 
-                item_id = 1
+                item_id = 5
                 status = 1
                 bids_required = 172
                 #Allowed duration: Between 2–6 hours
